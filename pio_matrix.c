@@ -21,18 +21,20 @@ const uint button_0 = 5;
 const uint button_1 = 6;
 
 //vetor para criar imagem na matriz de led - 1
-double desenho[25] =   {0.0, 0.3, 0.3, 0.3, 0.0,
-                        0.0, 0.3, 0.0, 0.3, 0.0, 
-                        0.0, 0.3, 0.3, 0.3, 0.0,
-                        0.0, 0.3, 0.0, 0.3, 0.0,
-                        0.0, 0.3, 0.3, 0.3, 0.0};
+double desenho[25] =   {0.2, 0.2, 0.2, 0.2, 0.2,
+                        0.2, 0.2, 0.2, 0.2, 0.2, 
+                        0.2, 0.2, 0.2, 0.2, 0.2,
+                        0.2, 0.2, 0.2, 0.2, 0.2,
+                        0.2, 0.2, 0.2, 0.2, 0.2};
 
-//vetor para criar imagem na matriz de led - 2
-double desenho2[25] =   {1.0, 0.0, 0.0, 0.0, 1.0,
-                        0.0, 1.0, 0.0, 1.0, 0.0, 
-                        0.0, 0.0, 1.0, 0.0, 0.0,
-                        0.0, 1.0, 0.0, 1.0, 0.0,
-                        1.0, 0.0, 0.0, 0.0, 1.0};
+double matrizAnimacao[6][25] = {
+    {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+    {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1, 0.1, 0.1},
+    {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1},
+    {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1},
+    {0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1},
+    {0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1}
+};
 
 //imprimir valor binário
 void imprimir_binario(int num) {
@@ -65,18 +67,28 @@ void desenho_pio(double *desenho, uint32_t valor_led, PIO pio, uint sm, double r
     for (int16_t i = 0; i < NUM_PIXELS; i++) {
         if (i%2==0)
         {
-            valor_led = matrix_rgb(desenho[24-i], r=0.0, g=0.0);
+            valor_led = matrix_rgb(desenho[24-i], g, b);
             pio_sm_put_blocking(pio, sm, valor_led);
 
         }else{
-            valor_led = matrix_rgb(b=0.0, desenho[24-i], g=0.0);
+            valor_led = matrix_rgb(r, desenho[24-i], b);
             pio_sm_put_blocking(pio, sm, valor_led);
         }
     }
     imprimir_binario(valor_led);
 }
 
-//função principal
+void desenho_pio_branco(double *desenho, uint32_t valor_led, PIO pio, uint sm){
+
+    for (int16_t i = 0; i < NUM_PIXELS; i++)
+    {
+        valor_led = matrix_rgb(desenho[24-i], desenho[24-i],desenho[24-i]);
+        pio_sm_put_blocking(pio, sm, valor_led);
+    }
+    imprimir_binario(valor_led);
+}
+
+
 int main()
 {
     PIO pio = pio0; 
@@ -111,22 +123,26 @@ int main()
 
     //interrupção da gpio habilitada
     gpio_set_irq_enabled_with_callback(button_0, GPIO_IRQ_EDGE_FALL, 1, & gpio_irq_handler);
-
-    while (true) {
-    
-    if(gpio_get(button_1)) //botão em nível alto
+    int j = 0;
+    while (true)
     {
-        //rotina para escrever na matriz de leds com o emprego de PIO - desenho 2
-        desenho_pio(desenho, valor_led, pio, sm, r, g, b);
-    }
-    else
-    {
-        //rotina para escrever na matriz de leds com o emprego de PIO - desenho 1
-        desenho_pio(desenho2, valor_led, pio, sm, r, g, b);
-    }
+        if(gpio_get(button_1)) //botão em nível alto
+        {
+            if (j<6)
+            {
+                desenho_pio(matrizAnimacao[j], valor_led, pio, sm, r, g, b);
+                j++;
+            }else{
+                j = 0;
+            }
+        }
+        else
+        {
+            desenho_pio_branco(desenho, valor_led, pio, sm);
 
-    sleep_ms(500);
-    printf("\nfrequeência de clock %ld\r\n", clock_get_hz(clk_sys));
+        }
+
+        sleep_ms(500);
+        printf("\nfrequeência de clock %ld\r\n", clock_get_hz(clk_sys));
     }
-    
 }
